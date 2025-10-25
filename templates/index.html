@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Handwriting Generator</title>
+  <style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+body {
+    font-family: 'Poppins', sans-serif;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    overflow: hidden;
+    background: linear-gradient(270deg, #1cb5e0, #000851, #ff00cc, #00ff99);
+    background-size: 800% 800%;
+    animation: gradientBG 20s ease infinite;
+}
+
+@keyframes gradientBG {
+    0% {background-position:0% 50%;}
+    50% {background-position:100% 50%;}
+    100% {background-position:0% 50%;}
+}
+
+.container {
+    display: flex;
+    gap: 2rem;
+    width: 95%;
+    max-width: 1500px;
+    padding: 2rem;
+}
+
+form, #preview-container {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(15px);
+    padding: 2rem;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+    transition: transform 0.3s;
+}
+
+form:hover, #preview-container:hover {
+    transform: translateY(-5px) scale(1.02);
+}
+
+textarea, select, input {
+    width: 100%;
+    margin: 10px 0 20px 0;
+    padding: 0.8rem;
+    font-size: 1rem;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.4);
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    transition: all 0.3s;
+}
+
+textarea::placeholder {
+    color: #eee;
+}
+
+textarea:focus, input:focus, select:focus {
+    border-color: #00ffff;
+    box-shadow: 0 0 15px #00ffff50;
+    outline: none;
+}
+
+button {
+    background: linear-gradient(45deg, #00ffff, #0066ff);
+    border: none;
+    color: white;
+    padding: 0.8rem 1.5rem;
+    border-radius: 12px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+button:hover {
+    transform: scale(1.1) rotate(-2deg);
+    box-shadow: 0 10px 25px rgba(0,255,255,0.5);
+}
+
+#preview-container img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 12px;
+    box-shadow: 0 0 20px rgba(0,255,255,0.5);
+    opacity: 0;
+    animation: fadeIn 0.8s forwards;
+}
+
+@keyframes fadeIn {
+    to {opacity:1;}
+}
+</style>
+
+
+</head>
+<body>
+  <div class="container">
+    <form id="handwriting-form" method="post">
+      <h2>Handwriting Generator</h2>
+      <p>Paste your text. AI will detect questions and answers automatically.</p>
+
+      <label>Choose Font Style:</label>
+      <select name="font_name" required>
+        {% for font in fonts %}
+        <option value="{{ font }}">{{ font }}</option>
+        {% endfor %}
+      </select>
+
+      <label>Font Size:</label>
+      <input type="number" name="font_size" value="40" min="20" max="120" required>
+
+      <label>Text Alignment:</label>
+      <select name="text_align">
+        <option value="left" selected>Left</option>
+        <option value="center">Center</option>
+        <option value="right">Right</option>
+      </select>
+
+      <textarea name="text" placeholder="Enter your text here..." rows="10"></textarea>
+
+      <div class="options">
+        <button type="button" id="preview-btn">Preview</button>
+        <button type="submit">Generate PDF</button>
+      </div>
+    </form>
+
+    <div id="preview-container">
+      <h3>Preview:</h3>
+      <p style="color:#666;">Your preview will appear here...</p>
+    </div>
+  </div>
+
+  <script>
+    async function generatePreview() {
+      const form = document.getElementById("handwriting-form");
+      const formData = new FormData(form);
+
+      const response = await fetch("/preview", {
+        method: "POST",
+        body: formData
+      });
+
+      const data = await response.json();
+      document.getElementById("preview-container").innerHTML = `
+        <h3>Preview:</h3>
+        <img src="${data.preview_url}?t=${Date.now()}" alt="Preview">
+      `;
+    }
+
+    document.getElementById("preview-btn").addEventListener("click", generatePreview);
+
+    const fontSelector = document.querySelector('select[name="font_name"]');
+    const fontSizeInput = document.querySelector('input[name="font_size"]');
+    const textAlignSelector = document.querySelector('select[name="text_align"]');
+    const textArea = document.querySelector('textarea[name="text"]');
+
+    fontSelector.addEventListener("change", generatePreview);
+    fontSizeInput.addEventListener("change", generatePreview);
+    textAlignSelector.addEventListener("change", generatePreview);
+    textArea.addEventListener("input", () => {
+      clearTimeout(window.previewTimeout);
+      window.previewTimeout = setTimeout(generatePreview, 1000);
+    });
+
+    // Prevent Enter key from submitting accidentally
+    document.getElementById("handwriting-form").addEventListener("keydown", function(e) {
+      if (e.key === "Enter" && e.target.tagName !== "TEXTAREA") {
+        e.preventDefault();
+      }
+    });
+  </script>
+</body>
+</html>
