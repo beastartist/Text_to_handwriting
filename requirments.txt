@@ -1,0 +1,3 @@
+Pillow
+fpdf
+textwrap3
